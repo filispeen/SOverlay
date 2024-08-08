@@ -1,7 +1,7 @@
 {
   "name": "stream-overlay",
   "productName": "stream-overlay",
-  "version": "1.0.0",
+  "version": "0.2.3",
   "description": "My Electron application description",
   "main": "src/index.js",
   "scripts": {
