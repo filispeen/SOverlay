@@ -1,51 +1,85 @@
-const { shell, app, BrowserWindow, screen, ipcMain } = require('electron');
+const { app, BrowserWindow, screen, globalShortcut, ipcMain } = require('electron');
+const remote = require('@electron/remote/main');
 const path = require('node:path');
+const fs = require('fs');
+require('v8-compile-cache');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
+
 const createWindow = () => {
-  // Get the primary display size
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
-  // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: width,
-    height: height,
-    maxWidth: width, minWidth: width,
-    maxHeight: height, minHeight: height,
+    width: 363,
+    height: 631,
+    maxWidth: 363, minWidth: 363,
+    maxHeight: 631, minHeight: 631,
+    x: 1548, y: 200,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      //preload: path.join(__dirname, 'preload.js'),
       contextIsolation: false,  // Required for iframe/webview
       nodeIntegration: true
     },
     frame: false,
     autoHideMenuBar: true,
     transparent: true,
-    alwaysOnTop: true
+    alwaysOnTop: true,
+    skipTaskbar: true
+  });
+  const editMessageWindow = new BrowserWindow({ width: width, height: height, maxWidth: width, minWidth: width, maxHeight: height, minHeight: height, frame: false, resizable: false, autoHideMenuBar: true, transparent: true, alwaysOnTop: true, skipTaskbar: true, webPreferences: { preload: __dirname + "\\edit_preload.js"}})
+
+  editMessageWindow.setOpacity(0);
+  //mainWindow.loadFile(path.join(__dirname, 'index.html')); //Youtube chat and almost everything doesn`t work.
+  mainWindow.loadURL("https://youtube.com/live_chat?v=jnBzgExtFB8"); //Using this method everything fucking works.
+  mainWindow.setIgnoreMouseEvents(true, { forward: true })
+  editMessageWindow.loadFile(path.join(__dirname, "edit_message.html"))
+  editMessageWindow.setIgnoreMouseEvents(true, { forward: true })
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    const cssPath = path.join(__dirname, 'chat.css');
+    fs.readFile(cssPath, 'utf8', (err, data) => {
+        if (err) {
+            console.error('Ошибка чтения файла CSS:', err);
+            return;
+        }
+        mainWindow.webContents.insertCSS(data).then(() => {
+            console.log('Кастомный CSS успешно добавлен.');
+        }).catch((error) => {
+            console.error('Ошибка при добавлении CSS:', error);
+        });
+    });
   });
 
-  ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
-    win.setIgnoreMouseEvents(ignore, options)
-  })
-  // and load the index.html of the app.
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  const win = BrowserWindow.getFocusedWindow();
+  win.setIgnoreMouseEvents(true, { forward: true });
 
-  // Open the DevTools.
-  //mainWindow.webContents.openDevTools();
+  var edit = false;
+  globalShortcut.register('Alt+CommandOrControl+O', () => {
+    console.log('Toggling edit mode.');
+    if (!edit) {
+      mainWindow.setSkipTaskbar(false);
+      editMessageWindow.setOpacity(1);
+      edit = true;
+    } else {
+      mainWindow.setSkipTaskbar(true);
+      win.setIgnoreMouseEvents(true, { forward: true });
+      editMessageWindow.setOpacity(0);
+      edit = false;
+    }
+  })
+  //win.setIgnoreMouseEvents(true);
+
+  ipcMain.on("close-app", () => app.quit());
+  ipcMain.on("forward_false", () => editMessageWindow.setIgnoreMouseEvents(false, { forward: false }));
+  ipcMain.on("forward_true", () => editMessageWindow.setIgnoreMouseEvents(true, { forward: true }));
 };
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   createWindow();
-
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
@@ -53,14 +87,8 @@ app.whenReady().then(() => {
   });
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.

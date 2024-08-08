@@ -29,7 +29,10 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@electron/remote": "^2.1.2",
     "electron-squirrel-startup": "^1.0.1",
-    "screen-resolution": "^1.0.0"
+    "fs": "^0.0.1-security",
+    "v8-compile-cache": "^2.4.0",
+    "youtube-chat": "^2.2.0"
   }
 }

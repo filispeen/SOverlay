@@ -1,0 +1,114 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <link rel="stylesheet" href="jquery-ui.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Mulish&display=swap');
+        .cube {
+            background-color: rgb(255, 0, 0);
+            position: fixed;
+            left: 97.44%;
+            top: 0%;
+            width: 2.55%;
+            height: 4.53%;
+            z-index: 1;
+            justify-content: center;
+            justify-items: center;
+        }
+        .EDIT_MODE {
+          font-size: 79px;
+          font-family: "Mulish", sans-serif;
+          color: rgb(0, 255, 240);
+          line-height: 1.2;
+          text-align: center;
+          position: absolute;
+          left: 39.94%;
+          top: 45.65%;
+        }
+        body {
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        .resizable {
+            position: absolute;
+            border: 2px solid black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .resize-handle {
+            width: 10px;
+            height: 10px;
+            background-color: black;
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            cursor: se-resize;
+        }
+    </style>
+    <body>
+        <div class="cube" id="close">
+            <p style="text-align: center; margin: 0; top: 25%; position: relative;">&#10006</p> <!--z-index: 2; position: absolute; left: 35%; top: -5px;-->
+        </div>
+        <p class="EDIT_MODE">EDIT_MODE</p>
+
+        <div class="resizable" style="width: 100px; height: 100px; background-color: red; top: 50px; left: 50px;">
+            <div class="resize-handle"></div>
+        </div>
+        <div class="resizable" style="width: 100px; height: 100px; background-color: green; top: 200px; left: 200px;">
+            <div class="resize-handle"></div>
+        </div>
+        <div class="resizable" style="width: 100px; height: 100px; background-color: blue; top: 350px; left: 350px;">
+            <div class="resize-handle"></div>
+        </div>
+    
+        <script src="jquery-3.6.0.min.js"></script>
+        <script src="jquery-ui.min.js"></script>
+        <script defer>
+            const close_btn = document.getElementById("close");
+    
+            close_btn.addEventListener("click", () => {
+                api.close();
+            });
+    
+            close_btn.addEventListener('mouseenter', () => {
+                console.log("Close btn hover in");
+                close_btn.style.backgroundColor = "rgb("+160+","+0+","+0+")";
+                api.forward_false();
+            });
+    
+            close_btn.addEventListener('mouseleave', () => {
+                console.log("Close btn hover out");
+                close_btn.style.backgroundColor = "rgb("+255+","+0+","+0+")";
+                api.forward_true();
+            });
+            //Listeners
+            $('.resizable').each(function() {
+                var $this = $(this);
+                console.log('Adding listeners and etc. for', $this);
+
+                $this.on('mouseenter', function() {
+                    console.log("Close btn hover in");
+                    api.forward_false(); // Вызов функции api
+                });
+
+                $this.on('mouseleave', function() {
+                    console.log("Close btn hover out");
+                    api.forward_true(); // Вызов функции api
+                });
+
+                $this.draggable();
+                // Make the div resizable
+                $this.resizable({
+                    handles: 'se', // Use the built-in southeast handle
+                    resize: function(event, ui) {
+                        console.log('Position:', ui.position);
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>
