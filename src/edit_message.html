@@ -124,6 +124,11 @@
                 };
                 
                 console.log('Size:', size);
+                var width = size.width;
+                var height = size.height;
+                var x = ui.position.left
+                var y = ui.position.top
+                api.push_chat_props({width, height, x, y})
             }
         });
         </script>

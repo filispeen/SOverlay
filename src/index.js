@@ -12,7 +12,7 @@ if (require('electron-squirrel-startup')) {
 
 const createWindow = () => {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-  const chat_x = Math.round(width * 0.80625);//percent 0,80625
+  const chat_x = Math.round(width * 0.81);//percent 0,80625
   const chat_y = Math.round(height * 0.18518);
   const chat_width = Math.round(width * 0.1890625);
   const chat_height = Math.round(height * 0.5842592592592593);
@@ -21,8 +21,8 @@ const createWindow = () => {
 
   const mainWindow = new BrowserWindow({
     width: chat_width, height: chat_height,
-    maxWidth: chat_width, minWidth: chat_height,
-    maxHeight: chat_width, minHeight: chat_height,
+    /*maxWidth: chat_width, minWidth: chat_height,
+    maxHeight: chat_width, minHeight: chat_height,*/
     x: chat_x, y: chat_y,
     webPreferences: {
       //preload: path.join(__dirname, 'preload.js'),
@@ -43,7 +43,7 @@ const createWindow = () => {
   mainWindow.setIgnoreMouseEvents(true, { forward: true });
   editMessageWindow.loadFile(path.join(__dirname, "edit_message.html"));
   editMessageWindow.setIgnoreMouseEvents(true, { forward: true });
-  editMessageWindow.webContents.openDevTools();
+  //editMessageWindow.webContents.openDevTools();
 
   mainWindow.webContents.on('did-finish-load', () => {
     const cssPath = path.join(__dirname, 'chat.css');
@@ -89,7 +89,12 @@ const createWindow = () => {
 
   ipcMain.on("close-app", () => app.quit());
   ipcMain.on("forward_false", () => editMessageWindow.setIgnoreMouseEvents(false, { forward: false }));
-  ipcMain.on("forward_true", () => editMessageWindow.setIgnoreMouseEvents(false, { forward: false }));
+  ipcMain.on("forward_true", () => editMessageWindow.setIgnoreMouseEvents(true, { forward: true }));
+  ipcMain.on("chat_props", (event, chat_props) => {
+      console.log(chat_props);
+      mainWindow.setPosition(chat_props["x"], chat_props["y"]);
+      mainWindow.setSize(chat_props["width"], chat_props["height"])
+  });
 };
 
 app.whenReady().then(() => {
