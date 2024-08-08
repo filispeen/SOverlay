@@ -40,9 +40,10 @@ const createWindow = () => {
   editMessageWindow.setOpacity(0);
   //mainWindow.loadFile(path.join(__dirname, 'index.html')); //Youtube chat and almost everything doesn`t work.
   mainWindow.loadURL("https://youtube.com/live_chat?v=jnBzgExtFB8"); //Using this method everything fucking works.
-  mainWindow.setIgnoreMouseEvents(true, { forward: true })
-  editMessageWindow.loadFile(path.join(__dirname, "edit_message.html"))
-  editMessageWindow.setIgnoreMouseEvents(true, { forward: true })
+  mainWindow.setIgnoreMouseEvents(true, { forward: true });
+  editMessageWindow.loadFile(path.join(__dirname, "edit_message.html"));
+  editMessageWindow.setIgnoreMouseEvents(true, { forward: true });
+  editMessageWindow.webContents.openDevTools();
 
   mainWindow.webContents.on('did-finish-load', () => {
     const cssPath = path.join(__dirname, 'chat.css');
@@ -76,11 +77,19 @@ const createWindow = () => {
       edit = false;
     }
   })
-  //win.setIgnoreMouseEvents(true);
+
+  //Api requests
+  ipcMain.handle('get_window_props', () => {
+      const { width, height } = mainWindow.getBounds();
+      const x = chat_x;
+      const y = chat_y;
+      console.log({ width, height, x, y });
+      return { width, height, x, y };
+  });
 
   ipcMain.on("close-app", () => app.quit());
   ipcMain.on("forward_false", () => editMessageWindow.setIgnoreMouseEvents(false, { forward: false }));
-  ipcMain.on("forward_true", () => editMessageWindow.setIgnoreMouseEvents(true, { forward: true }));
+  ipcMain.on("forward_true", () => editMessageWindow.setIgnoreMouseEvents(false, { forward: false }));
 };
 
 app.whenReady().then(() => {

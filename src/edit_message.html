@@ -55,60 +55,88 @@
         </div>
         <p class="EDIT_MODE">EDIT_MODE</p>
 
-        <div class="resizable" style="width: 100px; height: 100px; background-color: red; top: 50px; left: 50px;">
+        <div class="resizable" id="chat" style="width: 100px; height: 100px; background-color: rgba(0, 0, 0, 0.200); top: 50px; left: 50px;">
             <div class="resize-handle"></div>
         </div>
-        <div class="resizable" style="width: 100px; height: 100px; background-color: green; top: 200px; left: 200px;">
+        <!--<div class="resizable" style="width: 100px; height: 100px; background-color: green; top: 200px; left: 200px;">
             <div class="resize-handle"></div>
         </div>
         <div class="resizable" style="width: 100px; height: 100px; background-color: blue; top: 350px; left: 350px;">
             <div class="resize-handle"></div>
-        </div>
+        </div>-->
     
         <script src="jquery-3.6.0.min.js"></script>
         <script src="jquery-ui.min.js"></script>
         <script defer>
             const close_btn = document.getElementById("close");
     
-            close_btn.addEventListener("click", () => {
-                api.close();
-            });
+            close_btn.addEventListener("click", () => {api.close();});
     
             close_btn.addEventListener('mouseenter', () => {
-                console.log("Close btn hover in");
+                console.log("Forward false");
                 close_btn.style.backgroundColor = "rgb("+160+","+0+","+0+")";
                 api.forward_false();
             });
     
             close_btn.addEventListener('mouseleave', () => {
-                console.log("Close btn hover out");
+                console.log("Forward true");
                 close_btn.style.backgroundColor = "rgb("+255+","+0+","+0+")";
                 api.forward_true();
             });
+
             //Listeners
-            $('.resizable').each(function() {
+            $(function() {
+            $(".resizable").each(function() {
                 var $this = $(this);
-                console.log('Adding listeners and etc. for', $this);
-
+        
                 $this.on('mouseenter', function() {
-                    console.log("Close btn hover in");
-                    api.forward_false(); // Вызов функции api
+                    console.log("Forward false");
+                    api.forward_false();
                 });
-
                 $this.on('mouseleave', function() {
-                    console.log("Close btn hover out");
-                    api.forward_true(); // Вызов функции api
+                    console.log("Forward true");
+                    api.forward_true();
                 });
 
-                $this.draggable();
+                // Make the div draggable
+                $this.draggable({
+                    drag: function(event, ui) {
+                        logPositionAndSize(ui, $this);
+                    }
+                });
+        
                 // Make the div resizable
                 $this.resizable({
-                    handles: 'se', // Use the built-in southeast handle
+                    handles: 'se',
                     resize: function(event, ui) {
-                        console.log('Position:', ui.position);
+                        logPositionAndSize(ui, $this);
                     }
                 });
             });
+        
+            function logPositionAndSize(ui, $element) {
+                console.log('Position:', ui.position);
+                
+                // Размер можно получить непосредственно у элемента
+                var size = ui.size || {
+                    width: $element.width(),
+                    height: $element.height()
+                };
+                
+                console.log('Size:', size);
+            }
+        });
+        </script>
+        <script>
+            const requestWindowSize = async () => {
+                const windowSize = await window.api.get_window_props();
+                console.log(windowSize);
+                document.getElementById('chat').style.width = windowSize.width + "px";
+                document.getElementById('chat').style.height = windowSize.height + "px";
+                document.getElementById('chat').style.top = windowSize.y + "px";
+                document.getElementById('chat').style.left = windowSize.x + "px";
+            }
+            requestWindowSize();
         </script>
     </body>
 </html>
