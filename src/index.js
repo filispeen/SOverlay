@@ -1,5 +1,5 @@
 const { app, BrowserWindow, screen, globalShortcut, ipcMain } = require('electron');
-const remote = require('@electron/remote/main');
+//const remote = require('@electron/remote/main');
 const path = require('node:path');
 const fs = require('fs');
 require('v8-compile-cache');
@@ -12,13 +12,18 @@ if (require('electron-squirrel-startup')) {
 
 const createWindow = () => {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  const chat_x = Math.round(width * 0.80625);//percent 0,80625
+  const chat_y = Math.round(height * 0.18518);
+  const chat_width = Math.round(width * 0.1890625);
+  const chat_height = Math.round(height * 0.5842592592592593);
+
+  console.log(chat_width, chat_height);
 
   const mainWindow = new BrowserWindow({
-    width: 363,
-    height: 631,
-    maxWidth: 363, minWidth: 363,
-    maxHeight: 631, minHeight: 631,
-    x: 1548, y: 200,
+    width: chat_width, height: chat_height,
+    maxWidth: chat_width, minWidth: chat_height,
+    maxHeight: chat_width, minHeight: chat_height,
+    x: chat_x, y: chat_y,
     webPreferences: {
       //preload: path.join(__dirname, 'preload.js'),
       contextIsolation: false,  // Required for iframe/webview
