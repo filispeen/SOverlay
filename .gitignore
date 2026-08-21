@@ -90,3 +90,9 @@ typings/
 
 # Electron-Forge
 out/
+
+obs-studio-sdk/
+
+build/
+
+profile.json
