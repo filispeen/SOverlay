@@ -31,5 +31,8 @@
     "@electron-forge/plugin-fuses": "^7.11.2",
     "@electron/fuses": "^1.8.0",
     "electron": "43.4.1"
+  },
+  "allowScripts": {
+    "electron-winstaller@5.4.4": true
   }
 }
