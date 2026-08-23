@@ -1,0 +1,155 @@
+#include "ws-hub.hpp"
+
+#include <ixwebsocket/IXNetSystem.h>
+#include <ixwebsocket/IXWebSocketServer.h>
+
+#include <obs-module.h>
+#include <plugin-support.h>
+
+#include <mutex>
+#include <set>
+#include <sstream>
+
+namespace {
+
+std::unique_ptr<ix::WebSocketServer> g_server;
+std::mutex g_mutex;
+std::vector<SourceState> g_last_visible_set;
+
+std::string escape_json(const std::string &in)
+{
+	std::string out;
+	out.reserve(in.size());
+	for (char c : in) {
+		switch (c) {
+		case '"':
+			out += "\\\"";
+			break;
+		case '\\':
+			out += "\\\\";
+			break;
+		case '\n':
+			out += "\\n";
+			break;
+		default:
+			out += c;
+		}
+	}
+	return out;
+}
+
+std::string state_to_json_fields(const SourceState &s)
+{
+	std::ostringstream o;
+	o << "\"uuid\":\"" << escape_json(s.uuid) << "\",";
+	o << "\"name\":\"" << escape_json(s.name) << "\",";
+	o << "\"enabled\":" << (s.enabled ? "true" : "false") << ",";
+	o << "\"show_onscreen\":" << (s.show_onscreen ? "true" : "false") << ",";
+	o << "\"transform\":{";
+	o << "\"x\":" << s.x << ",";
+	o << "\"y\":" << s.y << ",";
+	o << "\"width\":" << s.width << ",";
+	o << "\"height\":" << s.height;
+	o << "}";
+	return o.str();
+}
+
+std::string build_visible_set_message(const std::vector<SourceState> &states)
+{
+	std::ostringstream o;
+	o << "{\"type\":\"visible_set\",\"sources\":[";
+	bool first = true;
+	for (const auto &s : states) {
+		if (!first)
+			o << ",";
+		first = false;
+		o << "{" << state_to_json_fields(s) << "}";
+	}
+	o << "]}";
+	return o.str();
+}
+
+} // namespace
+
+namespace ws_hub {
+
+void start(int port)
+{
+	std::lock_guard<std::mutex> lock(g_mutex);
+	if (g_server) {
+		obs_log(LOG_WARNING, "ws_hub::start called while server already running");
+		return;
+	}
+
+	ix::initNetSystem();
+
+	g_server = std::make_unique<ix::WebSocketServer>(port, "127.0.0.1");
+
+	g_server->setOnConnectionCallback(
+		[](std::weak_ptr<ix::WebSocket> weak_ws, std::shared_ptr<ix::ConnectionState> connection_state) {
+			(void)connection_state;
+			auto ws = weak_ws.lock();
+			if (!ws)
+				return;
+
+			ws->setOnMessageCallback([weak_ws](const ix::WebSocketMessagePtr &msg) {
+				if (msg->type != ix::WebSocketMessageType::Open)
+					return;
+
+				auto ws2 = weak_ws.lock();
+				if (!ws2)
+					return;
+
+				std::string snapshot;
+				{
+					std::lock_guard<std::mutex> lock(g_mutex);
+					snapshot = build_visible_set_message(g_last_visible_set);
+				}
+				ws2->send(snapshot, false);
+			});
+		});
+
+	auto result = g_server->listen();
+	if (!result.first) {
+		obs_log(LOG_ERROR, "ws_hub: failed to listen on port %d: %s", port, result.second.c_str());
+		g_server.reset();
+		ix::uninitNetSystem();
+		return;
+	}
+
+	g_server->start();
+	obs_log(LOG_INFO, "ws_hub: listening on ws://127.0.0.1:%d", port);
+}
+
+void stop()
+{
+	std::lock_guard<std::mutex> lock(g_mutex);
+	if (!g_server)
+		return;
+
+	g_server->stop();
+	g_server.reset();
+	ix::uninitNetSystem();
+	obs_log(LOG_INFO, "ws_hub: stopped");
+}
+
+void publish_visible_set(const std::vector<SourceState> &states)
+{
+	std::string message;
+	std::set<std::shared_ptr<ix::WebSocket>> clients;
+
+	{
+		std::lock_guard<std::mutex> lock(g_mutex);
+		g_last_visible_set = states;
+		if (!g_server)
+			return;
+		message = build_visible_set_message(states);
+		clients = g_server->getClients();
+	}
+
+	for (auto &client : clients) {
+		client->send(message, false);
+	}
+}
+
+} // namespace ws_hub

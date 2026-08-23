@@ -16,89 +16,22 @@
             color: white;
             box-sizing: border-box;
         }
-
-        #chat-container {
-            position: absolute;
-            bottom: 40px;
-            left: 40px;
-            width: 350px;
-            max-height: 600px;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end; 
-            gap: 10px; 
-        }
-
-        .chat-message {
-            background: rgba(0, 0, 0, 0.65); 
-            padding: 10px 15px;
-            border-radius: 8px;
-            word-wrap: break-word; 
-            text-shadow: 1px 1px 2px black; 
-            animation: slideIn 0.3s ease-out forwards; 
-        }
-
-        .chat-author {
-            font-weight: bold;
-            margin-right: 5px;
-        }
-
-        .chat-text {
-            color: #ffffff;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(-20px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        #debug-panel {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.4;
+            white-space: pre;
+            max-width: 360px;
         }
     </style>
 </head>
 <body>
-    <div id="chat-container"></div>
-    <script>
-        const chatContainer = document.getElementById('chat-container');
-
-        
-        function addChatMessage(author, text, authorColor = '#ffaa00') {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'chat-message';
-
-            const authorSpan = document.createElement('span');
-            authorSpan.className = 'chat-author';
-            authorSpan.style.color = authorColor;
-            authorSpan.textContent = author + ':';
-
-            const textSpan = document.createElement('span');
-            textSpan.className = 'chat-text';
-            textSpan.textContent = ' ' + text;
-
-            msgDiv.appendChild(authorSpan);
-            msgDiv.appendChild(textSpan);
-
-            chatContainer.appendChild(msgDiv);
-
-            if (chatContainer.children.length > 6) {
-                chatContainer.removeChild(chatContainer.firstChild);
-            }
-        }
-
-        function ChatExample() {
-
-            let counter = 1;
-            setInterval(() => {
-                const colors = ['#ff5555', '#55ff55', '#5555ff', '#ffff55'];
-                const randomColor = colors[Math.floor(Math.random() * colors.length)];
-                
-                addChatMessage(
-                    `GUY №${counter}`, 
-                    `Message №${counter}`, 
-                    randomColor
-                );
-                counter++;
-            }, 2000);
-        }
-
-        ChatExample();
-    </script>
+    <div id="debug-panel"></div>
+    <script src="index.js"></script>
 </body>
 </html>

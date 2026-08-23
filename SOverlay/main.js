@@ -23,6 +23,7 @@ function createOverlay() {
   overlayWindow.setIgnoreMouseEvents(true);
   overlayWindow.maximize();
   overlayWindow.loadFile('SOverlay/index.html');
+  overlayWindow.webContents.openDevTools({ mode: 'detach' });
   console.log('Overlay window created and loaded.');
 }
 
