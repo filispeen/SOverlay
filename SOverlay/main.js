@@ -60,6 +60,8 @@ function updateBrowserView(source) {
       show: false,
       width: source.source_width,
       height: source.source_height,
+      transparent: true,
+      frame: false,
       webPreferences: {
         offscreen: true,
         backgroundThrottling: false
