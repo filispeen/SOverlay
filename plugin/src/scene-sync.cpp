@@ -4,8 +4,6 @@
 #include <obs-frontend-api.h>
 #include <obs.h>
 
-#include <graphics/matrix4.h>
-
 #include <string>
 #include <vector>
 #include <cstring>
@@ -62,40 +60,75 @@ bool collect_item_cb(obs_scene_t *scene, obs_sceneitem_t *item, void *param)
 	state.enabled = obs_sceneitem_visible(item);
 	state.show_onscreen = show_onscreen;
 
+	const char *item_kind = obs_source_get_unversioned_id(item_source);
+	state.source_kind = item_kind ? item_kind : "";
+
+	obs_data_t *item_settings = obs_source_get_settings(item_source);
+	if (item_settings) {
+		if (state.source_kind == "browser_source") {
+			const char *url = obs_data_get_string(item_settings, "url");
+			state.browser_url = url ? url : "";
+			const char *css = obs_data_get_string(item_settings, "css");
+			state.browser_css = css ? css : "";
+		} else if (state.source_kind == "image_source") {
+			const char *file = obs_data_get_string(item_settings, "file");
+			state.image_file = file ? file : "";
+		}
+		obs_data_release(item_settings);
+	}
+
 	obs_video_info ovi;
 	if (obs_get_video_info(&ovi) && ovi.base_width > 0 && ovi.base_height > 0) {
-		matrix4 box_transform;
-		obs_sceneitem_get_box_transform(item, &box_transform);
+		struct vec2 pos;
+		struct vec2 scale;
+		obs_sceneitem_get_pos(item, &pos);
+		obs_sceneitem_get_scale(item, &scale);
 
-		vec3 corners[4];
-		vec3_set(&corners[0], 0.0f, 0.0f, 0.0f);
-		vec3_set(&corners[1], 1.0f, 0.0f, 0.0f);
-		vec3_set(&corners[2], 0.0f, 1.0f, 0.0f);
-		vec3_set(&corners[3], 1.0f, 1.0f, 0.0f);
+		uint32_t source_width = obs_source_get_width(item_source);
+		uint32_t source_height = obs_source_get_height(item_source);
 
-		float min_x = 0.0f, max_x = 0.0f, min_y = 0.0f, max_y = 0.0f;
-		for (int i = 0; i < 4; i++) {
-			vec3 transformed;
-			vec3_transform(&transformed, &corners[i], &box_transform);
-			if (i == 0) {
-				min_x = max_x = transformed.x;
-				min_y = max_y = transformed.y;
-			} else {
-				if (transformed.x < min_x)
-					min_x = transformed.x;
-				if (transformed.x > max_x)
-					max_x = transformed.x;
-				if (transformed.y < min_y)
-					min_y = transformed.y;
-				if (transformed.y > max_y)
-					max_y = transformed.y;
-			}
+		struct obs_sceneitem_crop crop;
+		obs_sceneitem_get_crop(item, &crop);
+
+		float cropped_width = static_cast<float>(source_width) -
+				       static_cast<float>(crop.left + crop.right);
+		float cropped_height = static_cast<float>(source_height) -
+					static_cast<float>(crop.top + crop.bottom);
+
+		float item_width = cropped_width * scale.x;
+		float item_height = cropped_height * scale.y;
+
+		enum obs_bounds_type bounds_type = obs_sceneitem_get_bounds_type(item);
+		float box_x = pos.x;
+		float box_y = pos.y;
+		float box_width = item_width;
+		float box_height = item_height;
+
+		if (bounds_type != OBS_BOUNDS_NONE) {
+			struct vec2 bounds;
+			obs_sceneitem_get_bounds(item, &bounds);
+			box_width = bounds.x;
+			box_height = bounds.y;
 		}
 
-		state.x = min_x / static_cast<double>(ovi.base_width);
-		state.y = min_y / static_cast<double>(ovi.base_height);
-		state.width = (max_x - min_x) / static_cast<double>(ovi.base_width);
-		state.height = (max_y - min_y) / static_cast<double>(ovi.base_height);
+		uint32_t alignment = obs_sceneitem_get_alignment(item);
+		if (alignment & OBS_ALIGN_RIGHT)
+			box_x -= box_width;
+		else if (!(alignment & OBS_ALIGN_LEFT))
+			box_x -= box_width / 2.0f;
+
+		if (alignment & OBS_ALIGN_BOTTOM)
+			box_y -= box_height;
+		else if (!(alignment & OBS_ALIGN_TOP))
+			box_y -= box_height / 2.0f;
+
+		state.x = box_x / static_cast<double>(ovi.base_width);
+		state.y = box_y / static_cast<double>(ovi.base_height);
+		state.width = box_width / static_cast<double>(ovi.base_width);
+		state.height = box_height / static_cast<double>(ovi.base_height);
+		state.bounds_type = static_cast<int>(bounds_type);
+		state.source_width = source_width;
+		state.source_height = source_height;
 	}
 
 	out->push_back(std::move(state));
@@ -121,6 +154,13 @@ void refresh_and_publish()
 }
 
 void on_scene_item_signal(void *data, calldata_t *cd)
+{
+	(void)data;
+	(void)cd;
+	refresh_and_publish();
+}
+
+void on_source_update_signal(void *data, calldata_t *cd)
 {
 	(void)data;
 	(void)cd;
@@ -182,6 +222,9 @@ namespace scene_sync {
 void start()
 {
 	obs_frontend_add_event_callback(on_frontend_event, nullptr);
+	signal_handler_t *global_signals = obs_get_signal_handler();
+	if (global_signals)
+		signal_handler_connect(global_signals, "source_update", on_source_update_signal, nullptr);
 	subscribe_to_current_scene();
 	refresh_and_publish();
 }
@@ -189,6 +232,9 @@ void start()
 void stop()
 {
 	obs_frontend_remove_event_callback(on_frontend_event, nullptr);
+	signal_handler_t *global_signals = obs_get_signal_handler();
+	if (global_signals)
+		signal_handler_disconnect(global_signals, "source_update", on_source_update_signal, nullptr);
 	unsubscribe_current_scene();
 }
 

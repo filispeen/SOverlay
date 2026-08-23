@@ -45,6 +45,13 @@ std::string state_to_json_fields(const SourceState &s)
 	o << "\"name\":\"" << escape_json(s.name) << "\",";
 	o << "\"enabled\":" << (s.enabled ? "true" : "false") << ",";
 	o << "\"show_onscreen\":" << (s.show_onscreen ? "true" : "false") << ",";
+	o << "\"source_kind\":\"" << escape_json(s.source_kind) << "\",";
+	o << "\"browser_url\":\"" << escape_json(s.browser_url) << "\",";
+	o << "\"browser_css\":\"" << escape_json(s.browser_css) << "\",";
+	o << "\"image_file\":\"" << escape_json(s.image_file) << "\",";
+	o << "\"source_width\":" << s.source_width << ",";
+	o << "\"source_height\":" << s.source_height << ",";
+	o << "\"bounds_type\":" << s.bounds_type << ",";
 	o << "\"transform\":{";
 	o << "\"x\":" << s.x << ",";
 	o << "\"y\":" << s.y << ",";
