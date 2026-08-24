@@ -52,6 +52,11 @@ std::string state_to_json_fields(const SourceState &s)
 	o << "\"source_width\":" << s.source_width << ",";
 	o << "\"source_height\":" << s.source_height << ",";
 	o << "\"bounds_type\":" << s.bounds_type << ",";
+	o << "\"rotation\":" << s.rotation << ",";
+	o << "\"flip_x\":" << (s.flip_x ? "true" : "false") << ",";
+	o << "\"flip_y\":" << (s.flip_y ? "true" : "false") << ",";
+	o << "\"anchor_x\":" << s.anchor_x << ",";
+	o << "\"anchor_y\":" << s.anchor_y << ",";
 	o << "\"transform\":{";
 	o << "\"x\":" << s.x << ",";
 	o << "\"y\":" << s.y << ",";

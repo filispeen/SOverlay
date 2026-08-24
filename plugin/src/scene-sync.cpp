@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <cstring>
+#include <cmath>
 
 #define FILTER_ID "soverlay_show_onscreen_filter"
 #define PROP_SHOW_ONSCREEN "show_onscreen"
@@ -95,8 +96,11 @@ bool collect_item_cb(obs_scene_t *scene, obs_sceneitem_t *item, void *param)
 		float cropped_height = static_cast<float>(source_height) -
 					static_cast<float>(crop.top + crop.bottom);
 
-		float item_width = cropped_width * scale.x;
-		float item_height = cropped_height * scale.y;
+		bool flip_x = scale.x < 0.0f;
+		bool flip_y = scale.y < 0.0f;
+
+		float item_width = cropped_width * fabsf(scale.x);
+		float item_height = cropped_height * fabsf(scale.y);
 
 		enum obs_bounds_type bounds_type = obs_sceneitem_get_bounds_type(item);
 		float box_x = pos.x;
@@ -107,8 +111,12 @@ bool collect_item_cb(obs_scene_t *scene, obs_sceneitem_t *item, void *param)
 		if (bounds_type != OBS_BOUNDS_NONE) {
 			struct vec2 bounds;
 			obs_sceneitem_get_bounds(item, &bounds);
-			box_width = bounds.x;
-			box_height = bounds.y;
+			box_width = fabsf(bounds.x);
+			box_height = fabsf(bounds.y);
+			if (bounds.x < 0.0f)
+				flip_x = !flip_x;
+			if (bounds.y < 0.0f)
+				flip_y = !flip_y;
 		}
 
 		uint32_t alignment = obs_sceneitem_get_alignment(item);
@@ -129,6 +137,11 @@ bool collect_item_cb(obs_scene_t *scene, obs_sceneitem_t *item, void *param)
 		state.bounds_type = static_cast<int>(bounds_type);
 		state.source_width = source_width;
 		state.source_height = source_height;
+		state.rotation = static_cast<double>(obs_sceneitem_get_rot(item));
+		state.flip_x = flip_x;
+		state.flip_y = flip_y;
+		state.anchor_x = pos.x / static_cast<double>(ovi.base_width);
+		state.anchor_y = pos.y / static_cast<double>(ovi.base_height);
 	}
 
 	out->push_back(std::move(state));

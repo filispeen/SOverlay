@@ -48,6 +48,11 @@ function applyBrowserTransform(item, content, frame) {
   item.style.width = boxWidth + 'px';
   item.style.height = boxHeight + 'px';
 
+  const anchorPxX = (t.anchor_x || 0) * screenWidth - t.transform.x * screenWidth;
+  const anchorPxY = (t.anchor_y || 0) * screenHeight - t.transform.y * screenHeight;
+  item.style.transformOrigin = `${anchorPxX}px ${anchorPxY}px`;
+  item.style.transform = `rotate(${t.rotation || 0}deg) scaleX(${t.flip_x ? -1 : 1}) scaleY(${t.flip_y ? -1 : 1})`;
+
   const scaleX = boxWidth / frame.source_width;
   const scaleY = boxHeight / frame.source_height;
 
@@ -71,6 +76,7 @@ function applyBrowserTransform(item, content, frame) {
     offsetY = (boxHeight - frame.source_height * uniformScale) / 2;
   }
 
+  content.style.transformOrigin = 'top left';
   content.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${finalScaleX}, ${finalScaleY})`;
 }
 
@@ -144,7 +150,7 @@ function updateBrowserTransforms(sources) {
 
     (sources || []).forEach(s => {
         if (s.source_kind !== 'browser_source') return;
-        browserTransforms.set(s.uuid, { transform: s.transform, bounds_type: s.bounds_type });
+        browserTransforms.set(s.uuid, { transform: s.transform, bounds_type: s.bounds_type, rotation: s.rotation, flip_x: s.flip_x, flip_y: s.flip_y, anchor_x: s.anchor_x, anchor_y: s.anchor_y });
 
         const item = panel.querySelector(`[data-uuid="${s.uuid}"]`);
         if (item) {
@@ -204,6 +210,11 @@ function renderPreviewPanel(sources) {
         item.style.width = boxWidth + 'px';
         item.style.height = boxHeight + 'px';
 
+        const anchorPxX = (s.anchor_x || 0) * screenWidth - s.transform.x * screenWidth;
+        const anchorPxY = (s.anchor_y || 0) * screenHeight - s.transform.y * screenHeight;
+        item.style.transformOrigin = `${anchorPxX}px ${anchorPxY}px`;
+        item.style.transform = `rotate(${s.rotation || 0}deg) scaleX(${s.flip_x ? -1 : 1}) scaleY(${s.flip_y ? -1 : 1})`;
+
         if (content && s.source_width > 0 && s.source_height > 0) {
             content.style.width = s.source_width + 'px';
             content.style.height = s.source_height + 'px';
@@ -233,6 +244,7 @@ function renderPreviewPanel(sources) {
                 offsetY = (boxHeight - s.source_height * uniformScale) / 2;
             }
 
+            content.style.transformOrigin = 'top left';
             content.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${finalScaleX}, ${finalScaleY})`;
         }
     });
