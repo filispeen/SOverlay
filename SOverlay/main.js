@@ -47,7 +47,7 @@ function createOverlay() {
 
   overlayWindow.setIgnoreMouseEvents(true);
   overlayWindow.loadFile('SOverlay/index.html');
-  overlayWindow.webContents.openDevTools({ mode: 'detach' });
+  //overlayWindow.webContents.openDevTools({ mode: 'detach' });
   console.log('Overlay window created and loaded.');
 }
 
