@@ -64,6 +64,7 @@ target_sources(
     src/source-filter.cpp
     src/scene-sync.cpp
     src/ws-hub.cpp
+    src/overlay-launcher.cpp
 )
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})

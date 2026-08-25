@@ -1,0 +1,140 @@
+name: Build SOverlay
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-plugin:
+    name: Build OBS Plugin
+    runs-on: windows-2022
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $ver = "${{ github.ref_name }}" -replace '^v', ''
+          } else {
+            $ver = "0.0.0-dev.${{ github.run_number }}"
+          }
+          "version=$ver" >> $env:GITHUB_OUTPUT
+
+      - name: Cache plugin dependencies
+        uses: actions/cache@v4
+        with:
+          path: plugin/.deps
+          key: obs-plugin-deps-${{ hashFiles('plugin/buildspec.json') }}
+
+      - name: Configure plugin
+        working-directory: plugin
+        env:
+          CI: "true"
+        run: cmake --preset windows-ci-x64
+
+      - name: Build plugin
+        working-directory: plugin
+        run: cmake --build --preset windows-ci-x64 --config Release
+
+      - name: Verify plugin artifacts
+        shell: pwsh
+        run: |
+          $dll = "plugin\build_x64\rundir\Release\soverlay-obs-plugin.dll"
+          if (-not (Test-Path $dll)) {
+            throw "plugin dll was not produced at $dll"
+          }
+
+      - name: Upload plugin build
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-build
+          path: |
+            plugin/build_x64/rundir/Release/soverlay-obs-plugin.dll
+            plugin/build_x64/rundir/Release/soverlay-obs-plugin.pdb
+
+  build-overlay:
+    name: Build Electron Overlay
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build overlay
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run build:overlay
+
+      - name: Verify overlay artifacts
+        shell: pwsh
+        run: |
+          $exe = "dist-overlay\win-unpacked\SOverlay.exe"
+          if (-not (Test-Path $exe)) {
+            throw "overlay exe was not produced at $exe"
+          }
+
+      - name: Upload overlay build
+        uses: actions/upload-artifact@v4
+        with:
+          name: overlay-build
+          path: dist-overlay/win-unpacked
+
+  build-installer:
+    name: Build Installer
+    runs-on: windows-2022
+    needs: [build-plugin, build-overlay]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download plugin build
+        uses: actions/download-artifact@v4
+        with:
+          name: plugin-build
+          path: plugin/build_x64/rundir/Release
+
+      - name: Download overlay build
+        uses: actions/download-artifact@v4
+        with:
+          name: overlay-build
+          path: dist-overlay/win-unpacked
+
+      - name: Install NSIS
+        run: choco install nsis -y --no-progress
+
+      - name: Build installer
+        working-directory: installer
+        shell: pwsh
+        run: |
+          $ver = "${{ needs.build-plugin.outputs.version }}"
+          & "C:\Program Files (x86)\NSIS\makensis.exe" "/DVERSION=$ver" installer.nsi
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: SOverlay-Setup
+          path: installer/SOverlay-Setup-*.exe
+
+      - name: Attach installer to release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer/SOverlay-Setup-*.exe
+          generate_release_notes: true

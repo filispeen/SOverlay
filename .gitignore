@@ -91,7 +91,14 @@ typings/
 # Electron-Forge
 out/
 
+# electron-builder / installer build output
+dist-overlay/
+installer/SOverlay-Setup-*.exe
+
 !plugin/
 !plugin/*
 .*
 .*/
+!.github/
+!.github/**
+!.gitignore

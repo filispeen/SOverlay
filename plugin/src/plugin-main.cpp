@@ -19,6 +19,7 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include "source-filter.hpp"
 #include "scene-sync.hpp"
 #include "ws-hub.hpp"
+#include "overlay-launcher.hpp"
 
 #include <obs-module.h>
 #include <plugin-support.h>
@@ -33,6 +34,7 @@ bool obs_module_load(void)
 	register_source_filter();
 	ws_hub::start(WS_HUB_PORT);
 	scene_sync::start();
+	overlay_launcher::start();
 
 	obs_log(LOG_INFO, "plugin loaded successfully (version %s)", PLUGIN_VERSION);
 	return true;
@@ -40,6 +42,7 @@ bool obs_module_load(void)
 
 void obs_module_unload(void)
 {
+	overlay_launcher::stop();
 	scene_sync::stop();
 	ws_hub::stop();
 
