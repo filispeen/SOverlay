@@ -6,7 +6,7 @@ let reconnecting = false;
 const panel = document.getElementById('overlay-div');
 const statuspanel = document.getElementById('status-panel');
 const RECONNECT_DELAY = 2000;
-const DEBUG = true;
+const DEBUG = false;
 const browserTransforms = new Map();
 
 ipcRenderer.on('browser_frame', (event, frame) => {

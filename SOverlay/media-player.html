@@ -25,11 +25,16 @@
     video.loop = !!data.loop;
     video.pause();
     video.volume = 0.0;
-    if (typeof data.currentTimeMs === 'number') {
-      const setTime = () => { video.currentTime = data.currentTimeMs / 1000; };
-      if (video.readyState >= 1) setTime();
-      else video.addEventListener('loadedmetadata', setTime, { once: true });
-    }
+
+    const targetMs = typeof data.currentTimeMs === 'number' ? data.currentTimeMs : 0;
+
+    const applyTimeAndPlay = () => {
+      video.currentTime = targetMs / 1000;
+      if (data.autoplay) video.play().catch(() => {});
+    };
+
+    if (video.readyState >= 1) applyTimeAndPlay();
+    else video.addEventListener('loadedmetadata', applyTimeAndPlay, { once: true });
   });
 
   ipcRenderer.on('media_command', (event, cmd) => {

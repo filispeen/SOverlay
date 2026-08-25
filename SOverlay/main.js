@@ -172,6 +172,7 @@ function syncBrowserViews(sources) {
 
 function updateMediaView(source) {
   let entry = mediaViews.get(source.uuid);
+  const isNewEntry = !entry;
 
   if (!entry) {
     const win = new BrowserWindow({
@@ -193,7 +194,8 @@ function updateMediaView(source) {
       file: source.media_file,
       source_width: source.source_width,
       source_height: source.source_height,
-      lastPaintAt: 0
+      lastPaintAt: 0,
+      lastState: source.media_state
     };
     mediaViews.set(source.uuid, entry);
 
@@ -204,7 +206,8 @@ function updateMediaView(source) {
       win.webContents.send('load_media', {
         file: entry.file,
         loop: entry.loop,
-        currentTimeMs: typeof source.media_time_ms === 'number' ? source.media_time_ms : 0
+        currentTimeMs: typeof source.media_time_ms === 'number' ? source.media_time_ms : 0,
+        autoplay: source.media_state === 'playing'
       });
     });
 
@@ -225,10 +228,12 @@ function updateMediaView(source) {
     });
   } else if (entry.file !== source.media_file) {
     entry.file = source.media_file;
+    entry.lastState = source.media_state;
     entry.win.webContents.send('load_media', {
       file: entry.file,
       loop: entry.loop,
-      currentTimeMs: typeof source.media_time_ms === 'number' ? source.media_time_ms : 0
+      currentTimeMs: typeof source.media_time_ms === 'number' ? source.media_time_ms : 0,
+      autoplay: source.media_state === 'playing'
     });
   }
 
@@ -247,7 +252,7 @@ function updateMediaView(source) {
     }
   }
 
-  if (entry.lastState !== source.media_state) {
+  if (!isNewEntry && entry.lastState !== source.media_state) {
     entry.lastState = source.media_state;
     const action = source.media_state === 'playing' ? 'play'
       : source.media_state === 'paused' ? 'pause'

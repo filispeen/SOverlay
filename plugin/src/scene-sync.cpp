@@ -402,6 +402,7 @@ void unsubscribe_current_scene()
 		signal_handler_disconnect(g_current_scene_signals, "item_visible", on_scene_item_signal, nullptr);
 		signal_handler_disconnect(g_current_scene_signals, "item_add", on_scene_item_signal, nullptr);
 		signal_handler_disconnect(g_current_scene_signals, "item_remove", on_scene_item_signal, nullptr);
+		signal_handler_disconnect(g_current_scene_signals, "reorder", on_scene_item_signal, nullptr);
 		g_current_scene_signals = nullptr;
 	}
 	if (g_current_scene_source) {
@@ -426,6 +427,7 @@ void subscribe_to_current_scene()
 		signal_handler_connect(g_current_scene_signals, "item_visible", on_scene_item_signal, nullptr);
 		signal_handler_connect(g_current_scene_signals, "item_add", on_scene_item_signal, nullptr);
 		signal_handler_connect(g_current_scene_signals, "item_remove", on_scene_item_signal, nullptr);
+		signal_handler_connect(g_current_scene_signals, "reorder", on_scene_item_signal, nullptr);
 	}
 }
 
