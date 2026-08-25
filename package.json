@@ -1,26 +1,17 @@
 {
-  "name": "stream-overlay",
-  "productName": "stream-overlay",
-  "version": "0.2.3",
-  "description": "My Electron application description",
-  "main": "src/index.js",
+  "name": "SOverlay",
+  "productName": "SOverlay",
+  "version": "0.3.0",
+  "description": "Screen Overlay for obs plugin",
+  "main": "SOverlay/main.js",
+  "private": true,
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
+    "build:overlay": "electron-builder --dir",
     "lint": "echo \"No linting configured\""
-  },
-  "devDependencies": {
-    "@electron-forge/cli": "^7.11.2",
-    "@electron-forge/maker-deb": "^7.4.0",
-    "@electron-forge/maker-rpm": "^7.4.0",
-    "@electron-forge/maker-squirrel": "^7.4.0",
-    "@electron-forge/maker-zip": "^7.4.0",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.4.0",
-    "@electron-forge/plugin-fuses": "^7.4.0",
-    "@electron/fuses": "^1.8.0",
-    "electron": "31.3.0"
   },
   "keywords": [],
   "author": {
@@ -29,10 +20,39 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@electron/remote": "^2.1.2",
     "electron-squirrel-startup": "^1.0.1",
-    "fs": "^0.0.1-security",
     "v8-compile-cache": "^2.4.0",
-    "youtube-chat": "^2.2.0"
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.11.2",
+    "@electron-forge/maker-deb": "^7.11.2",
+    "@electron-forge/maker-rpm": "^7.11.2",
+    "@electron-forge/maker-squirrel": "^7.11.2",
+    "@electron-forge/maker-zip": "^7.11.2",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.11.2",
+    "@electron-forge/plugin-fuses": "^7.11.2",
+    "@electron/fuses": "^1.8.0",
+    "electron": "43.4.1",
+    "electron-builder": "^25.1.8"
+  },
+  "allowScripts": {
+    "electron-winstaller@5.4.4": true
+  },
+  "build": {
+    "appId": "com.filispeen.soverlay",
+    "productName": "SOverlay",
+    "directories": {
+      "output": "dist-overlay"
+    },
+    "files": [
+      "SOverlay/**/*",
+      "!SOverlay/**/*.map"
+    ],
+    "asar": true,
+    "win": {
+      "target": "dir",
+      "signAndEditExecutable": false
+    }
   }
 }

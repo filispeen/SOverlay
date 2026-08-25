@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Overlay</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: transparent; 
+            overflow: hidden; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            box-sizing: border-box;
+        }
+        #status-panel {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 32px;
+            line-height: 1.4;
+            white-space: pre;
+            max-width: 560px;
+            z-index: 1000;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        #overlay-div {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .preview-item {
+            position: absolute;
+            overflow: visible;
+        }
+        .preview-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            display: block;
+            border: 0;
+        }
+
+.loader {
+  --color-1: #fff;
+  --color-2: #ff3d00;
+  --size: 1px;
+
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 8px;
+
+  width: calc(48 * var(--size));
+  height: calc(48 * var(--size));
+  border-radius: 50%;
+  position: relative;
+  animation: rotate 1s linear infinite;
+  
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.loader::before,
+.loader::after {
+  content: '';
+  box-sizing: border-box;
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: calc(5 * var(--size)) solid var(--color-1);
+  animation: prixClipFix 2s linear infinite alternate;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.loader::after {
+  inset: calc(8 * var(--size));
+  border-color: var(--color-2);
+}
+
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes prixClipFix {
+  0% { clip-path: polygon(50% 50%, 0 0, 0 0, 0 0, 0 0, 0 0); }
+  50% { clip-path: polygon(50% 50%, 0 0, 100% 0, 100% 0, 100% 0, 100% 0); }
+  75%, 100% { clip-path: polygon(50% 50%, 0 0, 100% 0, 100% 100%, 100% 100%, 100% 100%); }
+}
+
+.loader.success {
+  animation: none; 
+  transform: rotate(45deg); 
+  border-radius: 0;
+  border-color: transparent;
+}
+
+.loader.success::after {
+  opacity: 0;
+  transform: scale(0);
+}
+
+.loader.success::before {
+  animation: none;
+  clip-path: none;
+  border-radius: 0; 
+
+  border-color: transparent #fff #fff transparent;
+  inset: calc(6 * var(--size)) calc(14 * var(--size)) calc(12 * var(--size)) calc(18 * var(--size));
+}
+    </style>
+</head>
+<body>
+    <div id="status-panel" style="display: block; animation-timing-function: ease-in-out; animation: fadeIn 0.5s;">Waiting until server appears <span class="loader"></span></div>
+    <div id="overlay-div"></div>
+    <script src="index.js"></script>
+</body>
+</html>
