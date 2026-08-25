@@ -19,7 +19,9 @@
   },
   "license": "MIT",
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.1"
+    "electron-squirrel-startup": "^1.0.1",
+    "v8-compile-cache": "^2.4.0",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.11.2",

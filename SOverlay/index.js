@@ -3,8 +3,8 @@ const { ipcRenderer } = require('electron');
 let socket;
 let sources = {};
 let reconnecting = false;
-const panel = document.getElementById('preview-panel');
-const debugPanel = document.getElementById('debug-panel');
+const panel = document.getElementById('overlay-div');
+const statuspanel = document.getElementById('status-panel');
 const RECONNECT_DELAY = 2000;
 const DEBUG = true;
 const browserTransforms = new Map();
@@ -18,7 +18,7 @@ ipcRenderer.on('browser_frame', (event, frame) => {
     item.className = 'preview-item';
     item.dataset.uuid = frame.uuid;
 
-    content = document.createElement('img');
+    content = document.createElement('canvas');
     content.className = 'preview-content';
     item.appendChild(content);
     panel.appendChild(item);
@@ -26,16 +26,49 @@ ipcRenderer.on('browser_frame', (event, frame) => {
     content = item.querySelector('.preview-content');
   }
 
-  content.src = frame.dataUrl;
+  drawBitmapFrame(content, frame);
   content.style.width = frame.source_width + 'px';
   content.style.height = frame.source_height + 'px';
 
   applyBrowserTransform(item, content, frame);
 });
 
+function drawBitmapFrame(canvas, frame) {
+  const w = frame.frame_width;
+  const h = frame.frame_height;
+  if (!w || !h) return;
+
+  if (canvas.width !== w || canvas.height !== h) {
+    canvas.width = w;
+    canvas.height = h;
+  }
+
+  const ctx = canvas.getContext('2d');
+  const imageData = ctx.createImageData(w, h);
+
+  const srcBytes = frame.bitmap;
+  const src32 = new Uint32Array(srcBytes.buffer, srcBytes.byteOffset, w * h);
+  const dst32 = new Uint32Array(imageData.data.buffer);
+
+  for (let i = 0; i < src32.length; i++) {
+    const px = src32[i];
+    const b = px & 0xff;
+    const g = (px >>> 8) & 0xff;
+    const r = (px >>> 16) & 0xff;
+    const a = (px >>> 24) & 0xff;
+    dst32[i] = (a << 24) | (b << 16) | (g << 8) | r;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
 function applyBrowserTransform(item, content, frame) {
   const t = browserTransforms.get(frame.uuid);
   if (!t) return;
+
+  if (typeof t.z_index === 'number') {
+    item.style.zIndex = String(t.z_index);
+  }
 
   const screenWidth = window.innerWidth;
   const screenHeight = window.innerHeight;
@@ -81,8 +114,8 @@ function applyBrowserTransform(item, content, frame) {
 }
 
 
-if (debugPanel.style.display === 'none' && DEBUG) {
-    debugPanel.style.display = 'block';
+if (statuspanel.style.display === 'none' && DEBUG) {
+    statuspanel.style.display = 'block';
 }
 
 function connect() {
@@ -91,6 +124,7 @@ function connect() {
     // events
     socket.addEventListener('open', () => {
         console.log('Connected to the server');
+        statuspanel.innerHTML = 'Connected to the server <span class="loader success"></span>';
         reconnecting = true;
     });
 
@@ -106,39 +140,61 @@ function connect() {
         });
         
         if (data.type === 'visible_set') {
-            renderDebugPanel(data.sources);
-            renderPreviewPanel(data.sources);
+            renderstatuspanel(data.sources);
+            renderOverlay(data.sources);
             updateBrowserTransforms(data.sources);
             ipcRenderer.send('visible_set', data.sources);
         }
     });
 
     socket.addEventListener('close', () => {
+        statuspanel.style.fontSize = '32px'
         if (!reconnecting) {
             console.log('Server not found. Trying to connect...');
+            //statuspanel.innerHTML = 'Waiting until server appears...' + "<span class=\"loader\"></span>";
         } else {
             console.log('Disconnected from the server. Reconnecting...');
+            statuspanel.innerHTML = 'Waiting until server appears...' + "<span class=\"loader\"></span>";
         }
 
+        statuspanel.style.display = 'block';
+        statuspanel.style.animation = 'fadeIn'; 
+        statuspanel.style.animationDuration = '0.5s'; 
         sources = {};
         panel.innerHTML = '';
-        debugPanel.textContent = 'Disconnected from the server. Reconnecting...';
+        browserTransforms.clear();
+        ipcRenderer.send('overlay_disconnected');
         setTimeout(connect, RECONNECT_DELAY);
     });
 }
 
-function renderDebugPanel(sources) {
+function renderstatuspanel(sources) {
+    if (!DEBUG) { 
+        setTimeout(() => {
+            statuspanel.style.animation = 'fadeOut'; 
+            statuspanel.style.animationDuration = '0.5s'; 
+            setTimeout(() => { statuspanel.style.display = 'none'; }, 500); 
+        }, 5000);
+        return 
+    }
+    statuspanel.style.fontSize = '12px';
     if (!sources || sources.length === 0) {
-        debugPanel.textContent = 'No visible sources';
+        statuspanel.textContent = 'No visible sources';
         return;
     }
-    debugPanel.textContent = sources
-        .map(s => `${s.name}\nx:${s.transform.x.toFixed(3)} y:${s.transform.y.toFixed(3)} w:${s.transform.width.toFixed(3)} h:${s.transform.height.toFixed(3)}`)
+    statuspanel.textContent = sources
+        .map(s => {
+            const base = `${s.name}\nx:${s.transform.x.toFixed(3)} y:${s.transform.y.toFixed(3)} w:${s.transform.width.toFixed(3)} h:${s.transform.height.toFixed(3)}`;
+            if (s.source_kind === 'ffmpeg_source') {
+                return `${base}\nmedia:${s.media_state} t:${s.media_time_ms}/${s.media_duration_ms}`;
+            }
+            return base;
+        })
         .join('\n\n');
 }
 
 function updateBrowserTransforms(sources) {
-    const activeUuids = new Set((sources || []).filter(s => s.source_kind === 'browser_source').map(s => s.uuid));
+    const activeUuids = new Set((sources || []).filter(s => s.source_kind === 'browser_source' || s.source_kind === 'ffmpeg_source').map(s => s.uuid));
 
     for (const uuid of Array.from(browserTransforms.keys())) {
         if (!activeUuids.has(uuid)) {
@@ -149,8 +205,8 @@ function updateBrowserTransforms(sources) {
     }
 
     (sources || []).forEach(s => {
-        if (s.source_kind !== 'browser_source') return;
-        browserTransforms.set(s.uuid, { transform: s.transform, bounds_type: s.bounds_type, rotation: s.rotation, flip_x: s.flip_x, flip_y: s.flip_y, anchor_x: s.anchor_x, anchor_y: s.anchor_y });
+        if (s.source_kind !== 'browser_source' && s.source_kind !== 'ffmpeg_source') return;
+        browserTransforms.set(s.uuid, { transform: s.transform, bounds_type: s.bounds_type, rotation: s.rotation, flip_x: s.flip_x, flip_y: s.flip_y, anchor_x: s.anchor_x, anchor_y: s.anchor_y, z_index: s.z_index });
 
         const item = panel.querySelector(`[data-uuid="${s.uuid}"]`);
         if (item) {
@@ -162,9 +218,9 @@ function updateBrowserTransforms(sources) {
     });
 }
 
-function renderPreviewPanel(sources) {
+function renderOverlay(sources) {
     const activeUuids = new Set((sources || [])
-        .filter(s => s.source_kind === 'image_source' || s.source_kind === 'browser_source')
+        .filter(s => s.source_kind === 'image_source' || s.source_kind === 'browser_source' || s.source_kind === 'ffmpeg_source')
         .map(s => s.uuid));
 
     Array.from(panel.children).forEach(child => {
@@ -209,6 +265,9 @@ function renderPreviewPanel(sources) {
         item.style.top = (s.transform.y * screenHeight) + 'px';
         item.style.width = boxWidth + 'px';
         item.style.height = boxHeight + 'px';
+        if (typeof s.z_index === 'number') {
+            item.style.zIndex = String(s.z_index);
+        }
 
         const anchorPxX = (s.anchor_x || 0) * screenWidth - s.transform.x * screenWidth;
         const anchorPxY = (s.anchor_y || 0) * screenHeight - s.transform.y * screenHeight;

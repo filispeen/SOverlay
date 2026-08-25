@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+  }
+  video {
+    display: block;
+  }
+</style>
+</head>
+<body>
+<video id="v"></video>
+<script>
+  const { ipcRenderer } = require('electron');
+  const video = document.getElementById('v');
+
+  ipcRenderer.on('load_media', (event, data) => {
+    video.src = 'file:///' + data.file.replace(/\\/g, '/');
+    video.loop = !!data.loop;
+    video.pause();
+    video.volume = 0.0;
+    if (typeof data.currentTimeMs === 'number') {
+      const setTime = () => { video.currentTime = data.currentTimeMs / 1000; };
+      if (video.readyState >= 1) setTime();
+      else video.addEventListener('loadedmetadata', setTime, { once: true });
+    }
+  });
+
+  ipcRenderer.on('media_command', (event, cmd) => {
+    if (cmd.action === 'play') video.play().catch(() => {});
+    else if (cmd.action === 'pause') video.pause();
+    else if (cmd.action === 'restart') { video.currentTime = 0; video.play().catch(() => {}); }
+    else if (cmd.action === 'stop') { video.pause(); video.currentTime = 0; }
+    else if (cmd.action === 'seek_ms') video.currentTime = cmd.value / 1000;
+    else if (cmd.action === 'set_volume') video.volume = cmd.value;
+    else if (cmd.action === 'set_loop') video.loop = !!cmd.value;
+  });
+</script>
+</body>
+</html>
