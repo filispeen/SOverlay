@@ -102,3 +102,8 @@ installer/SOverlay-Setup-*.exe
 !.github/
 !.github/**
 !.gitignore
+obs-studio-sdk/
+
+build/
+
+profile.json
