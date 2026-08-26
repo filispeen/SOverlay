@@ -37,6 +37,29 @@ void refresh_and_publish();
 void resync_media_subscriptions();
 void on_media_poll_tick(void *param, float seconds);
 
+struct apply_visibility_ctx {
+	obs_source_t *target_source;
+	bool visible;
+};
+
+bool apply_visibility_in_scene_cb(obs_scene_t *scene, obs_sceneitem_t *item, void *param)
+{
+	(void)scene;
+	auto *ctx = static_cast<apply_visibility_ctx *>(param);
+	obs_source_t *item_source = obs_sceneitem_get_source(item);
+	if (item_source == ctx->target_source)
+		obs_sceneitem_set_visible(item, ctx->visible);
+	return true;
+}
+
+bool apply_visibility_scenes_cb(void *param, obs_source_t *scene_source)
+{
+	obs_scene_t *scene = obs_scene_from_source(scene_source);
+	if (scene)
+		obs_scene_enum_items(scene, apply_visibility_in_scene_cb, param);
+	return true;
+}
+
 bool collect_item_cb(obs_scene_t *scene, obs_sceneitem_t *item, void *param)
 {
 	(void)scene;
@@ -476,6 +499,18 @@ void notify_filter_changed(obs_source_t *filter_context)
 {
 	(void)filter_context;
 	refresh_and_publish();
+}
+
+void apply_show_onscreen_visibility(obs_source_t *filter_context, bool show_onscreen)
+{
+	obs_source_t *target = obs_filter_get_parent(filter_context);
+	if (!target)
+		return;
+
+	apply_visibility_ctx ctx;
+	ctx.target_source = target;
+	ctx.visible = !show_onscreen;
+	obs_enum_scenes(apply_visibility_scenes_cb, &ctx);
 }
 
 } // namespace scene_sync

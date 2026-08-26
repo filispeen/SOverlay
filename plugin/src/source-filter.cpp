@@ -21,6 +21,7 @@ static void filter_update(void *data, obs_data_t *settings)
 {
 	auto *filter = static_cast<show_onscreen_filter *>(data);
 	filter->show_onscreen = obs_data_get_bool(settings, PROP_SHOW_ONSCREEN);
+	scene_sync::apply_show_onscreen_visibility(filter->context, filter->show_onscreen);
 	scene_sync::notify_filter_changed(filter->context);
 }
 
@@ -36,6 +37,7 @@ static void filter_destroy(void *data)
 {
 	auto *filter = static_cast<show_onscreen_filter *>(data);
 	obs_source_t *context = filter->context;
+	scene_sync::apply_show_onscreen_visibility(context, false);
 	delete filter;
 	scene_sync::notify_filter_changed(context);
 }
@@ -55,26 +57,9 @@ static void filter_get_defaults(obs_data_t *settings)
 
 static void filter_video_render(void *data, gs_effect_t *effect)
 {
+	(void)effect;
 	auto *filter = static_cast<show_onscreen_filter *>(data);
-
-	if (filter->show_onscreen) {
-		obs_source_skip_video_filter(filter->context);
-		return;
-	}
-
-	obs_source_t *target = obs_filter_get_target(filter->context);
-	if (!target) {
-		obs_source_skip_video_filter(filter->context);
-		return;
-	}
-
-	if (!obs_source_process_filter_begin(filter->context, GS_RGBA, OBS_ALLOW_DIRECT_RENDERING)) {
-		obs_source_skip_video_filter(filter->context);
-		return;
-	}
-
-	obs_source_process_filter_end(filter->context, effect ? effect : obs_get_base_effect(OBS_EFFECT_DEFAULT), 0,
-				       0);
+	obs_source_skip_video_filter(filter->context);
 }
 
 bool source_filter_is_show_onscreen(obs_source_t *filter_source)
