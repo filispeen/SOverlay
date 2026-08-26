@@ -47,7 +47,8 @@ OBS Source --[Show onscreen]--> plugin filter --skip render--> ws-hub (127.0.0.1
 2. Toggle **Show onscreen** in the filter properties.
 3. The source disappears from your OBS program output and appears in the transparent overlay window on your desktop, positioned to match its OBS transform.
 
-[example.mp4](md/example.mp4)
+
+https://github.com/user-attachments/assets/5c090bd0-2304-4db4-8ef8-0d71fa4baadc
 
 
 ## Building from source
